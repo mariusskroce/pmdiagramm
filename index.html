@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Markt-Labor | Angebot & Nachfrage Simulation</title>
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700;900&display=swap');
+        body { font-family: 'Inter', sans-serif; }
+        .graph-line { transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        .graph-point { transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+        input[type=range]::-webkit-slider-runnable-track { min-height: 44px; display: flex; align-items: center; }
+        input[type=range] { height: 44px; background: transparent; cursor: pointer; }
+    </style>
+</head>
+<body class="bg-slate-50">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+        
+        // Simple Icon Fallbacks using FontAwesome for the web version
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const icons = {
+                'arrow-up': 'fa-solid fa-arrow-up',
+                'arrow-down': 'fa-solid fa-arrow-down',
+                'basket': 'fa-solid fa-basket-shopping',
+                'wallet': 'fa-solid fa-wallet',
+                'info': 'fa-solid fa-circle-info',
+                'zap': 'fa-solid fa-bolt',
+                'rotate': 'fa-solid fa-rotate-left',
+                'chart': 'fa-solid fa-chart-line',
+                'layout': 'fa-solid fa-layer-group',
+                'check': 'fa-solid fa-circle-check',
+                'xmark': 'fa-solid fa-circle-xmark',
+                'help': 'fa-solid fa-circle-question',
+                'alert': 'fa-solid fa-triangle-exclamation',
+                'ban': 'fa-solid fa-ban',
+                'github': 'fa-brands fa-github'
+            };
+            return <i className={`${icons[name]} ${className}`} style={{ fontSize: size + 'px' }}></i>;
+        };
+
+        const App = () => {
+            const [angebot, setAngebot] = useState(50);
+            const [nachfrage, setNachfrage] = useState(50);
+            const [preis, setPreis] = useState(1);
+            const [status, setStatus] = useState('gleichgewicht');
+            const [szenarioText, setSzenarioText] = useState('Marktgleichgewicht – Angebot und Nachfrage halten sich die Waage.');
+            const [viewMode, setViewMode] = useState('visual'); 
+            const [interventionMode, setInterventionMode] = useState(null); 
+            const [quizFeedback, setQuizFeedback] = useState(null); 
+            const [currentQuiz, setCurrentQuiz] = useState(0);
+
+            const quizFragen = [
+                {
+                    frage: "Die Produktionskosten sinken durch neue Technik. Was passiert mit dem Angebot?",
+                    korrekt: "steigt",
+                    zielA: 85,
+                    zielN: 50,
+                    erklaerung: "Richtig! Günstigere Produktion führt zu einem höheren Angebot."
+                },
+                {
+                    frage: "Ein Produkt wird plötzlich zum absoluten Trend auf TikTok. Die Nachfrage...",
+                    korrekt: "steigt",
+                    zielA: 50,
+                    zielN: 90,
+                    erklaerung: "Genau! Ein Hype treibt die Nachfrage steil nach oben."
+                }
+            ];
+
+            useEffect(() => {
+                const berechneterPreis = angebot === 0 ? (nachfrage * 2).toFixed(2) : (nachfrage / angebot).toFixed(2);
+                if (interventionMode === 'mindestpreis') {
+                    setPreis((parseFloat(berechneterPreis) * 1.5).toFixed(2));
+                    setStatus('angebotsueberhang');
+                } else if (interventionMode === 'hoechstpreis') {
+                    setPreis((parseFloat(berechneterPreis) * 0.6).toFixed(2));
+                    setStatus('nachfrageueberhang');
+                } else {
+                    setPreis(berechneterPreis);
+                    setStatus(nachfrage > angebot ? 'nachfrageueberhang' : (angebot > nachfrage ? 'angebotsueberhang' : 'gleichgewicht'));
+                }
+            }, [angebot, nachfrage, interventionMode]);
+
+            const getGraphCoords = () => {
+                const padding = 25, size = 175, s = 0.7;
+                const nOffset = (nachfrage - 50) * s;
+                const aOffset = (angebot - 50) * s;
+                
+                return {
+                    nLine: { x1: padding, y1: padding - nOffset, x2: size, y2: size - nOffset },
+                    aLine: { x1: padding, y1: size - aOffset, x2: size, y2: padding - aOffset },
+                    interX: (size + padding) / 2 + (nachfrage - angebot) * (s / 2),
+                    interY: (size + padding) / 2 - (nachfrage + angebot - 100) * (s / 2),
+                    originX: padding, originY: size, maxX: size, minY: padding
+                };
+            };
+
+            const coords = getGraphCoords();
+
+            return (
+                <div className="min-h-screen p-4 md:p-8 flex flex-col items-center">
+                    <header className="w-full max-w-6xl mb-8 flex flex-col lg:flex-row justify-between items-center gap-6">
+                        <div className="text-center lg:text-left">
+                            <h1 className="text-3xl md:text-4xl font-black text-slate-900 tracking-tight">Markt-Labor</h1>
+                            <p className="text-slate-500 font-medium text-sm uppercase tracking-widest">Interactive Economics</p>
+                        </div>
+                        <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-slate-200">
+                            <button onClick={() => setViewMode('visual')} className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${viewMode === 'visual' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}>Simulation</button>
+                            <button onClick={() => setViewMode('graph')} className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${viewMode === 'graph' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-500 hover:bg-slate-50'}`}>Graph</button>
+                        </div>
+                    </header>
+
+                    <main className="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-2 gap-8">
+                        <div className="space-y-6">
+                            <section className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100">
+                                <h2 className="text-lg font-bold mb-6 flex items-center gap-2"><Icon name="info" className="text-indigo-500" /> Parameter</h2>
+                                <div className="space-y-6">
+                                    <div>
+                                        <div className="flex justify-between mb-2"><label className="font-bold">🍎 Angebot</label><span className="text-emerald-600 font-black">{angebot}</span></div>
+                                        <input type="range" min="1" max="100" value={angebot} onChange={e => setAngebot(parseInt(e.target.value))} className="w-full accent-emerald-500" />
+                                    </div>
+                                    <div>
+                                        <div className="flex justify-between mb-2"><label className="font-bold">💰 Nachfrage</label><span className="text-amber-600 font-black">{nachfrage}</span></div>
+                                        <input type="range" min="1" max="100" value={nachfrage} onChange={e => setNachfrage(parseInt(e.target.value))} className="w-full accent-amber-500" />
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100">
+                                <h2 className="text-lg font-bold mb-4 flex items-center gap-2"><Icon name="zap" className="text-orange-500" /> Intervention</h2>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button onClick={() => setInterventionMode(interventionMode === 'mindestpreis' ? null : 'mindestpreis')} className={`p-4 rounded-2xl font-bold border-2 transition-all ${interventionMode === 'mindestpreis' ? 'bg-rose-600 border-rose-700 text-white shadow-lg' : 'bg-rose-50 border-rose-100 text-rose-700'}`}>Mindestpreis</button>
+                                    <button onClick={() => setInterventionMode(interventionMode === 'hoechstpreis' ? null : 'hoechstpreis')} className={`p-4 rounded-2xl font-bold border-2 transition-all ${interventionMode === 'hoechstpreis' ? 'bg-sky-600 border-sky-700 text-white shadow-lg' : 'bg-sky-50 border-sky-100 text-sky-700'}`}>Höchstpreis</button>
+                                </div>
+                            </section>
+                        </div>
+
+                        <div className="bg-white p-8 rounded-[2rem] shadow-xl border border-slate-100 flex flex-col items-center">
+                            <div className="text-center mb-6">
+                                <div className="text-[10px] font-black uppercase tracking-[0.3em] text-slate-400 mb-2">Marktpreis</div>
+                                <div className="text-6xl font-black text-indigo-600 tracking-tighter">{preis} €</div>
+                            </div>
+                            
+                            <div className="w-full bg-slate-50 rounded-[2rem] p-6 min-h-[300px] flex items-center justify-center border border-slate-100 shadow-inner">
+                                {viewMode === 'graph' ? (
+                                    <svg viewBox="0 0 200 200" className="w-full max-w-[280px]">
+                                        <line x1={coords.originX} y1={coords.minY} x2={coords.originX} y2={coords.originY} stroke="#cbd5e1" strokeWidth="2" />
+                                        <line x1={coords.originX} y1={coords.originY} x2={coords.maxX} y2={coords.originY} stroke="#cbd5e1" strokeWidth="2" />
+                                        <line className="graph-line" x1={coords.nLine.x1} y1={coords.nLine.y1} x2={coords.nLine.x2} y2={coords.nLine.y2} stroke="#f59e0b" strokeWidth="4" />
+                                        <line className="graph-line" x1={coords.aLine.x1} y1={coords.aLine.y1} x2={coords.aLine.x2} y2={coords.aLine.y2} stroke="#10b981" strokeWidth="4" />
+                                        <circle className="graph-point" cx={coords.interX} cy={coords.interY} r="6" fill="#1e293b" stroke="white" strokeWidth="2" />
+                                    </svg>
+                                ) : (
+                                    <div className="text-center">
+                                        <Icon name={status === 'nachfrageueberhang' ? 'arrow-up' : 'arrow-down'} size={80} className={status === 'nachfrageueberhang' ? 'text-emerald-500' : 'text-rose-500'} />
+                                        <p className="mt-4 font-bold text-slate-600 uppercase tracking-widest text-sm">{status}</p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    </main>
+
+                    <footer className="mt-12 text-center text-slate-400">
+                        <a href="https://github.com/mariusskroce" className="flex items-center gap-2 hover:text-indigo-600 transition-colors font-bold text-sm">
+                            <Icon name="github" size={18} /> @mariusskroce
+                        </a>
+                    </footer>
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+</html>
