@@ -14,9 +14,10 @@
         body { font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
         .graph-line { transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
         .graph-point { transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-        input[type=range] { height: 44px; background: transparent; cursor: pointer; appearance: none; width: 100%; }
+        input[type=range] { height: 44px; background: transparent; cursor: pointer; appearance: none; width: 100%; position: relative; z-index: 10; }
         input[type=range]::-webkit-slider-runnable-track { background: #e2e8f0; height: 8px; border-radius: 4px; }
-        input[type=range]::-webkit-slider-thumb { appearance: none; height: 24px; width: 24px; border-radius: 50%; background: #4f46e5; margin-top: -8px; border: 3px solid white; shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        input[type=range]::-webkit-slider-thumb { appearance: none; height: 24px; width: 24px; border-radius: 50%; background: #4f46e5; margin-top: -8px; border: 3px solid white; box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1); }
+        .axis-label { font-size: 8px; font-weight: 900; fill: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
     </style>
 </head>
 <body class="bg-slate-50 text-slate-800">
@@ -51,7 +52,6 @@
             const [nachfrage, setNachfrage] = useState(50);
             const [preis, setPreis] = useState(1);
             const [status, setStatus] = useState('gleichgewicht');
-            const [szenarioText, setSzenarioText] = useState('Marktgleichgewicht – Angebot und Nachfrage halten sich die Waage.');
             const [viewMode, setViewMode] = useState('visual'); 
             const [interventionMode, setInterventionMode] = useState(null); 
             const [quizFeedback, setQuizFeedback] = useState(null); 
@@ -61,13 +61,11 @@
                 {
                     frage: "Die Produktionskosten sinken durch neue Technik. Was passiert mit dem Angebot?",
                     korrekt: "steigt",
-                    zielA: 85, zielN: 50,
                     erklaerung: "Richtig! Günstigere Produktion führt zu einem höheren Angebot."
                 },
                 {
                     frage: "Ein Produkt wird plötzlich zum Trend. Die Nachfrage...",
                     korrekt: "steigt",
-                    zielA: 50, zielN: 90,
                     erklaerung: "Genau! Ein Hype treibt die Nachfrage steil nach oben."
                 }
             ];
@@ -85,11 +83,6 @@
                     setStatus(nachfrage > angebot ? 'nachfrageueberhang' : (angebot > nachfrage ? 'angebotsueberhang' : 'gleichgewicht'));
                 }
             }, [angebot, nachfrage, interventionMode]);
-
-            const handleSzenario = (a, n, text) => {
-                setAngebot(a); setNachfrage(n); setSzenarioText(text);
-                setInterventionMode(null); setQuizFeedback(null);
-            };
 
             const getGraphCoords = () => {
                 const padding = 25, size = 175, s = 0.7;
@@ -118,9 +111,9 @@
                             <h1 className="text-3xl font-black text-slate-900 tracking-tight">Markt-Labor</h1>
                             <p className="text-slate-500 text-xs font-bold uppercase tracking-widest">Wirtschaftssimulation</p>
                         </div>
-                        <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-                            <button onClick={() => setViewMode('visual')} className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${viewMode === 'visual' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-50 hover:bg-slate-50'}`}>Simulation</button>
-                            <button onClick={() => setViewMode('graph')} className={`px-6 py-2 rounded-xl text-sm font-bold transition-all ${viewMode === 'graph' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-50 hover:bg-slate-50'}`}>Graph</button>
+                        <div className="flex bg-white p-1 rounded-2xl shadow-sm border border-slate-300 overflow-hidden">
+                            <button onClick={() => setViewMode('visual')} className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${viewMode === 'visual' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-700 hover:bg-slate-50'}`}>Simulation</button>
+                            <button onClick={() => setViewMode('graph')} className={`px-6 py-2 rounded-xl text-sm font-black transition-all ${viewMode === 'graph' ? 'bg-indigo-600 text-white shadow-lg' : 'text-slate-700 hover:bg-slate-50'}`}>Graph</button>
                         </div>
                     </header>
 
@@ -128,14 +121,20 @@
                         <div className="space-y-6">
                             <section className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100">
                                 <h2 className="text-lg font-bold mb-6 flex items-center gap-2 text-slate-700"><Icon name="info" className="text-indigo-500" /> Parameter</h2>
-                                <div className="space-y-6">
-                                    <div>
-                                        <div className="flex justify-between mb-2"><label className="font-bold">🍎 Angebot</label><span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg font-black">{angebot}</span></div>
-                                        <input type="range" min="1" max="100" value={angebot} onChange={e => setAngebot(parseInt(e.target.value))} />
+                                <div className="space-y-8">
+                                    <div className="relative">
+                                        <div className="flex justify-between mb-2"><label className="font-bold text-sm">🍎 Angebot</label><span className="bg-emerald-100 text-emerald-700 px-3 py-1 rounded-lg font-black text-sm">{angebot}</span></div>
+                                        <div className="relative flex items-center">
+                                            <div className="absolute w-full h-px bg-slate-200 pointer-events-none"></div>
+                                            <input type="range" min="1" max="100" value={angebot} onChange={e => setAngebot(parseInt(e.target.value))} />
+                                        </div>
                                     </div>
-                                    <div>
-                                        <div className="flex justify-between mb-2"><label className="font-bold">💰 Nachfrage</label><span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-lg font-black">{nachfrage}</span></div>
-                                        <input type="range" min="1" max="100" value={nachfrage} onChange={e => setNachfrage(parseInt(e.target.value))} />
+                                    <div className="relative">
+                                        <div className="flex justify-between mb-2"><label className="font-bold text-sm">💰 Nachfrage</label><span className="bg-amber-100 text-amber-700 px-3 py-1 rounded-lg font-black text-sm">{nachfrage}</span></div>
+                                        <div className="relative flex items-center">
+                                            <div className="absolute w-full h-px bg-slate-200 pointer-events-none"></div>
+                                            <input type="range" min="1" max="100" value={nachfrage} onChange={e => setNachfrage(parseInt(e.target.value))} />
+                                        </div>
                                     </div>
                                 </div>
                             </section>
@@ -143,8 +142,8 @@
                             <section className="bg-white p-6 rounded-[2rem] shadow-xl border border-rose-50">
                                 <h2 className="text-lg font-bold mb-4 flex items-center gap-2 text-rose-700"><Icon name="alert" /> Staatseingriff</h2>
                                 <div className="grid grid-cols-2 gap-3">
-                                    <button onClick={() => setInterventionMode(interventionMode === 'mindestpreis' ? null : 'mindestpreis')} className={`p-4 rounded-2xl font-bold border-2 transition-all ${interventionMode === 'mindestpreis' ? 'bg-rose-600 border-rose-700 text-white' : 'bg-rose-50 border-rose-100 text-rose-700'}`}>Mindestpreis</button>
-                                    <button onClick={() => setInterventionMode(interventionMode === 'hoechstpreis' ? null : 'hoechstpreis')} className={`p-4 rounded-2xl font-bold border-2 transition-all ${interventionMode === 'hoechstpreis' ? 'bg-sky-600 border-sky-700 text-white' : 'bg-sky-50 border-sky-100 text-sky-700'}`}>Höchstpreis</button>
+                                    <button onClick={() => setInterventionMode(interventionMode === 'mindestpreis' ? null : 'mindestpreis')} className={`p-4 rounded-2xl font-bold border-2 transition-all ${interventionMode === 'mindestpreis' ? 'bg-rose-600 border-rose-700 text-white shadow-md' : 'bg-rose-50 border-rose-100 text-rose-700'}`}>Mindestpreis</button>
+                                    <button onClick={() => setInterventionMode(interventionMode === 'hoechstpreis' ? null : 'hoechstpreis')} className={`p-4 rounded-2xl font-bold border-2 transition-all ${interventionMode === 'hoechstpreis' ? 'bg-sky-600 border-sky-700 text-white shadow-md' : 'bg-sky-50 border-sky-100 text-sky-700'}`}>Höchstpreis</button>
                                 </div>
                             </section>
 
@@ -152,11 +151,11 @@
                                 <h2 className="text-lg font-bold mb-3 flex items-center gap-2"><Icon name="help" className="text-indigo-400" /> Challenge</h2>
                                 <p className="text-slate-300 text-sm mb-4 leading-relaxed">{quizFragen[currentQuiz].frage}</p>
                                 <div className="flex gap-2">
-                                    <button onClick={() => setQuizFeedback(quizFragen[currentQuiz].korrekt === 'steigt' ? 'correct' : 'wrong')} className="flex-1 py-3 bg-indigo-600 rounded-xl font-bold hover:bg-indigo-500 transition-all">Steigt</button>
-                                    <button onClick={() => setQuizFeedback(quizFragen[currentQuiz].korrekt === 'sinkt' ? 'correct' : 'wrong')} className="flex-1 py-3 bg-indigo-600 rounded-xl font-bold hover:bg-indigo-500 transition-all">Sinkt</button>
+                                    <button onClick={() => setQuizFeedback(quizFragen[currentQuiz].korrekt === 'steigt' ? 'correct' : 'wrong')} className="flex-1 py-3 bg-indigo-600 rounded-xl font-bold hover:bg-indigo-500 transition-all shadow-lg active:scale-95">Steigt</button>
+                                    <button onClick={() => setQuizFeedback(quizFragen[currentQuiz].korrekt === 'sinkt' ? 'correct' : 'wrong')} className="flex-1 py-3 bg-indigo-600 rounded-xl font-bold hover:bg-indigo-500 transition-all shadow-lg active:scale-95">Sinkt</button>
                                 </div>
                                 {quizFeedback && (
-                                    <div className={`mt-4 p-3 rounded-xl flex items-center gap-2 font-bold text-sm ${quizFeedback === 'correct' ? 'bg-emerald-900/40 text-emerald-400' : 'bg-rose-900/40 text-rose-400'}`}>
+                                    <div className={`mt-4 p-3 rounded-xl flex items-center gap-2 font-bold text-sm ${quizFeedback === 'correct' ? 'bg-emerald-900/40 text-emerald-400 border border-emerald-800' : 'bg-rose-900/40 text-rose-400 border border-rose-800'}`}>
                                         <Icon name={quizFeedback === 'correct' ? 'check' : 'xmark'} />
                                         {quizFeedback === 'correct' ? 'Richtig!' : 'Falsch, versuch es nochmal!'}
                                     </div>
@@ -166,8 +165,8 @@
 
                         <div className="bg-white p-6 rounded-[2rem] shadow-xl border border-slate-100 flex flex-col items-center">
                             <div className="w-full text-center relative mb-8">
-                                <div className="absolute top-0 right-0 bg-slate-100 px-3 py-1 rounded-lg text-[10px] font-black uppercase text-slate-500">
-                                    {parseFloat(preis) > 1 ? "Verkäufermarkt" : parseFloat(preis) < 1 ? "Käufermarkt" : "Gleichgewicht"}
+                                <div className="absolute top-0 right-0 bg-slate-100 px-3 py-1 rounded-lg text-[10px] font-black uppercase text-slate-600 border border-slate-200">
+                                    {parseFloat(preis) > 1.05 ? "Verkäufermarkt" : parseFloat(preis) < 0.95 ? "Käufermarkt" : "Gleichgewicht"}
                                 </div>
                                 <div className="text-[10px] uppercase font-black tracking-widest text-slate-400 mb-1">Aktueller Marktpreis</div>
                                 <div className="text-6xl font-black text-indigo-600 tracking-tighter">{preis} €</div>
@@ -176,16 +175,26 @@
                             <div className="w-full bg-slate-50 rounded-[2rem] p-4 min-h-[380px] flex flex-col items-center justify-center border border-slate-100 shadow-inner overflow-hidden relative">
                                 {viewMode === 'graph' ? (
                                     <svg viewBox="0 0 200 200" className="w-full max-w-[300px] overflow-visible">
+                                        {/* Axes */}
                                         <line x1={coords.originX} y1={coords.minY} x2={coords.originX} y2={coords.originY} stroke="#cbd5e1" strokeWidth="2.5" />
                                         <line x1={coords.originX} y1={coords.originY} x2={coords.maxX} y2={coords.originY} stroke="#cbd5e1" strokeWidth="2.5" />
+                                        
+                                        {/* Axis Labels */}
+                                        <text x={coords.originX - 5} y={coords.minY + 5} className="axis-label" textAnchor="end">Preis (P)</text>
+                                        <text x={coords.maxX} y={coords.originY + 12} className="axis-label" textAnchor="end">Menge (Q)</text>
+
+                                        {/* Demand & Supply Lines */}
                                         <line className="graph-line" x1={coords.nLine.x1} y1={coords.nLine.y1} x2={coords.nLine.x2} y2={coords.nLine.y2} stroke="#f59e0b" strokeWidth="4" />
                                         <line className="graph-line" x1={coords.aLine.x1} y1={coords.aLine.y1} x2={coords.aLine.x2} y2={coords.aLine.y2} stroke="#10b981" strokeWidth="4" />
+                                        
+                                        {/* Intervention visualization */}
                                         {interventionMode && (
                                             <g>
                                                 <line x1={coords.originX} y1={coords.pFixY} x2={coords.maxX} y2={coords.pFixY} stroke="#f43f5e" strokeWidth="2" strokeDasharray="4" />
                                                 <rect x={Math.min(coords.nXAtPFix, coords.aXAtPFix)} y={coords.pFixY-2} width={Math.abs(coords.nXAtPFix-coords.aXAtPFix)} height="4" fill="#f43f5e" opacity="0.4" />
                                             </g>
                                         )}
+                                        {/* Equilibrium Point */}
                                         <circle className="graph-point" cx={coords.interX} cy={coords.interY} r="6" fill="#1e293b" stroke="white" strokeWidth="2" />
                                     </svg>
                                 ) : (
@@ -202,7 +211,7 @@
 
                     <footer className="mt-12 text-center">
                         <a href="https://github.com/mariusskroce" className="flex items-center gap-2 text-slate-400 hover:text-indigo-600 font-bold text-xs transition-colors">
-                            <Icon name="github" /> @mariusskroce | Web Deployment Version
+                            <Icon name="github" /> @mariusskroce
                         </a>
                     </footer>
                 </div>
