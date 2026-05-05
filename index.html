@@ -152,7 +152,10 @@
 
   const quizFragen = [
     { frage: "Die Produktionskosten sinken durch neue Technik. Was passiert mit dem Angebot?", korrekt: "steigt" },
-    { frage: "Ein Produkt wird plötzlich zum Trend. Die Nachfrage...", korrekt: "steigt" }
+    { frage: "Ein Produkt wird plötzlich zum Trend. Die Nachfrage...", korrekt: "steigt" },
+    { frage: "Der Staat setzt einen Höchstpreis unter dem Gleichgewichtspreis. Was entsteht?", korrekt: "sinkt" },
+    { frage: "Eine Naturkatastrophe zerstört Ernten. Das Angebot von Lebensmitteln...", korrekt: "sinkt" },
+    { frage: "Ein neuer Konkurrenz-Anbieter betritt den Markt. Das Gesamtangebot...", korrekt: "steigt" }
   ];
   let qIdx = 0;
 
@@ -291,12 +294,21 @@
     document.getElementById('quiz-q').textContent = quizFragen[qIdx].frage;
     document.getElementById('quiz-feedback').style.display = 'none';
   }
+
   function answer(a) {
     const fb = document.getElementById('quiz-feedback');
     const ok = a === quizFragen[qIdx].korrekt;
     fb.className = 'quiz-feedback ' + (ok ? 'feedback-ok' : 'feedback-err');
     fb.textContent = ok ? '✓ Richtig!' : '✗ Falsch, versuch es nochmal!';
     fb.style.display = 'flex';
+
+    // Move to next question if correct
+    if (ok) {
+      setTimeout(() => {
+        qIdx = (qIdx + 1) % quizFragen.length; // Loop back to first question at the end
+        initQuiz();
+      }, 1000); // Wait 1 second before showing next question
+    }
   }
 
   initQuiz();
