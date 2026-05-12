@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Markt-Labor | Wirtschaftssimulation</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: system-ui, -apple-system, sans-serif; background: #f8fafc; color: #1e293b; min-height: 100vh; padding: 24px 16px; }
+  h1 { font-size: 1.8rem; font-weight: 900; letter-spacing: -0.03em; }
+  .subtitle { font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: #94a3b8; margin-top: 2px; }
+  header { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; max-width: 960px; margin: 0 auto 28px; }
+  .tab-group { display: flex; background: #fff; border: 1px solid #cbd5e1; border-radius: 16px; padding: 4px; gap: 2px; }
+  .tab { padding: 8px 20px; border-radius: 12px; font-size: 0.8rem; font-weight: 800; border: none; cursor: pointer; background: transparent; color: #475569; transition: all 0.2s; }
+  .tab.active { background: #4f46e5; color: #fff; box-shadow: 0 4px 12px #4f46e540; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 960px; margin: 0 auto; }
+  @media(max-width:680px){ .grid { grid-template-columns: 1fr; } }
+  .left { display: flex; flex-direction: column; gap: 20px; }
+  .card { background: #fff; border-radius: 24px; padding: 24px; box-shadow: 0 4px 24px #0000000d; border: 1px solid #f1f5f9; }
+  .card-title { font-size: 0.9rem; font-weight: 800; display: flex; align-items: center; gap: 8px; margin-bottom: 20px; color: #475569; }
+  .param-row { margin-bottom: 20px; }
+  .param-row:last-child { margin-bottom: 0; }
+  .param-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.85rem; font-weight: 700; }
+  .badge { padding: 3px 12px; border-radius: 8px; font-weight: 900; font-size: 0.8rem; }
+  .badge-green { background: #d1fae5; color: #065f46; }
+  .badge-amber { background: #fef3c7; color: #92400e; }
+  input[type=range] { width: 100%; height: 6px; appearance: none; background: #e2e8f0; border-radius: 3px; cursor: pointer; outline: none; }
+  input[type=range]::-webkit-slider-thumb { appearance: none; width: 22px; height: 22px; border-radius: 50%; background: #4f46e5; border: 3px solid #fff; box-shadow: 0 2px 8px #0002; cursor: pointer; }
+  .btn-group { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .btn-intervention { padding: 14px 8px; border-radius: 16px; font-weight: 800; font-size: 0.78rem; border: 2px solid; cursor: pointer; transition: all 0.2s; width: 100%; }
+  .btn-sub { background: #f5f3ff; border-color: #ddd6fe; color: #6d28d9; }
+  .btn-sub.on { background: #7c3aed; border-color: #6d28d9; color: #fff; }
+  .btn-tax { background: #fff7ed; border-color: #fed7aa; color: #c2410c; }
+  .btn-tax.on { background: #ea580c; border-color: #c2410c; color: #fff; }
+  .btn-rent { background: #f0fdf4; border-color: #bbf7d0; color: #15803d; }
+  .btn-rent.on { background: #16a34a; border-color: #15803d; color: #fff; }
+  .intervention-info { margin-top: 14px; border-radius: 16px; padding: 14px; display: none; }
+  .sub-info { background: #f5f3ff; border: 1px solid #ddd6fe; }
+  .tax-info { background: #fff7ed; border: 1px solid #fed7aa; }
+  .info-title { font-size: 0.6rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 10px; }
+  .sub-info .info-title { color: #7c3aed; }
+  .tax-info .info-title { color: #c2410c; }
+  .info-row { display: flex; justify-content: space-between; font-weight: 700; color: #334155; padding: 3px 0; font-size: 0.8rem; }
+  .info-row.highlight { font-weight: 900; border-top: 1px solid; margin-top: 4px; padding-top: 6px; }
+  .sub-info .info-row.highlight { color: #6d28d9; border-color: #ddd6fe; }
+  .tax-info .info-row.highlight { color: #c2410c; border-color: #fed7aa; }
+  .info-desc { font-size: 0.72rem; margin-top: 8px; line-height: 1.5; }
+  .sub-info .info-desc { color: #7c3aed; }
+  .tax-info .info-desc { color: #c2410c; }
+  .rate-slider-row { margin-top: 4px; margin-bottom: 10px; }
+  .rate-slider-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.78rem; font-weight: 700; color: #475569; }
+  .rate-badge-sub { background: #7c3aed; color: #fff; padding: 2px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 900; }
+  .rate-badge-tax { background: #ea580c; color: #fff; padding: 2px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 900; }
+  input.sub-range::-webkit-slider-thumb { background: #7c3aed; }
+  input.tax-range::-webkit-slider-thumb { background: #ea580c; }
+  .rent-legend { margin-top: 14px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .rent-chip { border-radius: 10px; padding: 5px 12px; font-size: 0.75rem; font-weight: 800; }
+  .quiz-card { background: #0f172a; border-radius: 24px; padding: 24px; color: #fff; }
+  .quiz-title { font-size: 0.9rem; font-weight: 800; display: flex; align-items: center; gap: 8px; margin-bottom: 12px; color: #818cf8; }
+  .quiz-q { font-size: 0.85rem; color: #cbd5e1; line-height: 1.6; margin-bottom: 16px; }
+  .quiz-btns { display: flex; gap: 10px; }
+  .quiz-btn { flex: 1; padding: 12px; background: #3730a3; border: none; border-radius: 12px; color: #fff; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: background 0.2s; }
+  .quiz-btn:hover { background: #4338ca; }
+  .quiz-feedback { margin-top: 12px; padding: 10px 14px; border-radius: 12px; font-weight: 700; font-size: 0.82rem; display: flex; align-items: center; gap: 8px; }
+  .feedback-ok { background: #052e1620; border: 1px solid #166534; color: #4ade80; }
+  .feedback-err { background: #4c000020; border: 1px solid #7f1d1d; color: #f87171; }
+  .right-card { background: #fff; border-radius: 24px; padding: 24px; box-shadow: 0 4px 24px #0000000d; border: 1px solid #f1f5f9; display: flex; flex-direction: column; align-items: center; }
+  .price-label { font-size: 0.6rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.12em; color: #94a3b8; margin-bottom: 4px; }
+  .price-value { font-size: 3.5rem; font-weight: 900; letter-spacing: -0.04em; color: #4f46e5; }
+  .price-value.violet { color: #7c3aed; }
+  .price-value.orange { color: #ea580c; }
+  .market-badge { font-size: 0.6rem; font-weight: 900; text-transform: uppercase; background: #f1f5f9; border: 1px solid #e2e8f0; color: #475569; padding: 4px 10px; border-radius: 8px; margin-bottom: 20px; align-self: flex-end; }
+  .visual-box { width: 100%; background: #f8fafc; border-radius: 20px; border: 1px solid #f1f5f9; min-height: 320px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px; }
+  .visual-icon { font-size: 5rem; margin-bottom: 16px; }
+  .visual-text { background: #fff; border: 1px solid #e2e8f0; border-radius: 14px; padding: 12px 20px; font-weight: 800; font-size: 0.85rem; text-align: center; }
+  .sub-visual-info { margin-top: 14px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .sub-chip { background: #f5f3ff; border: 1px solid #ddd6fe; border-radius: 12px; padding: 8px 16px; font-size: 0.78rem; font-weight: 800; color: #6d28d9; }
+  .sub-hint { font-size: 0.7rem; color: #94a3b8; font-weight: 600; text-align: center; max-width: 220px; line-height: 1.5; }
+  .elast-panel { width: 100%; display: flex; flex-direction: column; gap: 16px; }
+  .elast-formula { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 14px 18px; text-align: center; }
+  .elast-formula-text { font-size: 1rem; font-weight: 800; color: #1e293b; }
+  .elast-formula-sub { font-size: 0.7rem; color: #94a3b8; margin-top: 4px; font-weight: 600; }
+  .elast-graph-box { width: 100%; background: #f8fafc; border-radius: 16px; border: 1px solid #e2e8f0; padding: 6px; }
+  .elast-slider-row { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 14px 18px; }
+  .elast-slider-label { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; font-size: 0.82rem; font-weight: 700; color: #475569; }
+  .elast-x0-val { background: #4f46e5; color: #fff; padding: 2px 10px; border-radius: 8px; font-size: 0.78rem; font-weight: 900; }
+  .elast-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  .elast-card { border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 6px; }
+  .elast-card-n { background: #fefce8; border: 1.5px solid #fde68a; }
+  .elast-card-a { background: #f0fdf4; border: 1.5px solid #bbf7d0; }
+  .elast-card-label { font-size: 0.6rem; font-weight: 900; text-transform: uppercase; letter-spacing: 0.1em; color: #94a3b8; }
+  .elast-card-value { font-size: 2rem; font-weight: 900; letter-spacing: -0.04em; }
+  .elast-card-n .elast-card-value { color: #d97706; }
+  .elast-card-a .elast-card-value { color: #16a34a; }
+  .elast-badge { display: inline-block; padding: 3px 10px; border-radius: 8px; font-size: 0.68rem; font-weight: 900; }
+  .elast-badge-elastic { background: #dbeafe; color: #1d4ed8; }
+  .elast-badge-inelastic { background: #fee2e2; color: #b91c1c; }
+  .elast-badge-unit { background: #e0e7ff; color: #4338ca; }
+  .elast-interp { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px; padding: 14px 18px; font-size: 0.78rem; color: #475569; line-height: 1.6; font-weight: 600; }
+  .elast-interp strong { color: #1e293b; }
+  svg text { user-select: none; }
+  .footer { text-align: center; margin-top: 40px; }
+  .gh-link { display: inline-flex; align-items: center; gap: 8px; color: #94a3b8; font-size: 0.75rem; font-weight: 700; text-decoration: none; padding: 8px 16px; border-radius: 12px; border: 1px solid #e2e8f0; background: #fff; transition: all 0.2s; }
+  .gh-link:hover { color: #4f46e5; border-color: #c7d2fe; background: #eef2ff; }
+  .gh-icon { transition: color 0.2s; }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>Markt-Labor</h1>
+    <div class="subtitle">Wirtschaftssimulation</div>
+  </div>
+  <div class="tab-group">
+    <button class="tab active" id="tab-visual" onclick="setView('visual')">Simulation</button>
+    <button class="tab" id="tab-graph" onclick="setView('graph')">Graph</button>
+    <button class="tab" id="tab-elast" onclick="setView('elastizitaet')">Elastizität</button>
+  </div>
+</header>
+
+<div class="grid">
+  <div class="left">
+
+    <!-- Parameter -->
+    <div class="card">
+      <div class="card-title">ℹ️ Parameter</div>
+      <div class="param-row">
+        <div class="param-label">
+          <span>🍎 Angebot</span>
+          <span class="badge badge-green" id="val-angebot">50</span>
+        </div>
+        <input type="range" min="1" max="100" value="50" id="sl-angebot" oninput="onParamChange()">
+      </div>
+      <div class="param-row">
+        <div class="param-label">
+          <span>💰 Nachfrage</span>
+          <span class="badge badge-amber" id="val-nachfrage">50</span>
+        </div>
+        <input type="range" min="1" max="100" value="50" id="sl-nachfrage" oninput="onParamChange()">
+      </div>
+    </div>
+
+    <!-- Staatseingriff -->
+    <div class="card" style="border-color:#f3f0ff;">
+      <div class="card-title" style="color:#6d28d9;">⚠️ Staatseingriff</div>
+      <div class="btn-group">
+        <button class="btn-intervention btn-sub" id="btn-sub" onclick="toggleMode('subvention')">🤝 Subvention</button>
+        <button class="btn-intervention btn-tax" id="btn-tax" onclick="toggleMode('steuer')">🏛️ Steuer</button>
+      </div>
+
+      <!-- Subvention -->
+      <div id="sub-info" class="intervention-info sub-info">
+        <div class="info-title">Subventionseffekte</div>
+        <div class="rate-slider-row">
+          <div class="rate-slider-label">
+            <span>Subventionssatz</span>
+            <span class="rate-badge-sub" id="sub-rate-display">20 %</span>
+          </div>
+          <input type="range" min="1" max="60" value="20" id="sl-sub-rate" class="sub-range" oninput="onRateChange('sub')">
+        </div>
+        <div class="info-row"><span>Gleichgewichtspreis (ohne)</span><span id="si-basis">–</span></div>
+        <div class="info-row" style="color:#7c3aed;"><span>Subvention je Einheit</span><span id="si-sub">–</span></div>
+        <div class="info-row highlight"><span>Konsumentenpreis</span><span id="si-cons">–</span></div>
+        <div class="info-row" style="color:#16a34a;"><span>Produzentenpreis</span><span id="si-prod">–</span></div>
+        <div class="info-desc">Angebotskurve verschiebt sich nach rechts → mehr Menge, niedrigerer Konsumentenpreis, höherer Produzentenpreis.</div>
+      </div>
+
+      <!-- Steuer -->
+      <div id="tax-info" class="intervention-info tax-info">
+        <div class="info-title">Steuereffekte</div>
+        <div class="rate-slider-row">
+          <div class="rate-slider-label">
+            <span>Steuersatz</span>
+            <span class="rate-badge-tax" id="tax-rate-display">20 %</span>
+          </div>
+          <input type="range" min="1" max="60" value="20" id="sl-tax-rate" class="tax-range" oninput="onRateChange('tax')">
+        </div>
+        <div class="info-row"><span>Gleichgewichtspreis (ohne)</span><span id="ti-basis">–</span></div>
+        <div class="info-row" style="color:#c2410c;"><span>Steuer je Einheit</span><span id="ti-tax">–</span></div>
+        <div class="info-row highlight"><span>Konsumentenpreis</span><span id="ti-cons">–</span></div>
+        <div class="info-row" style="color:#92400e;"><span>Produzentenpreis (netto)</span><span id="ti-prod">–</span></div>
+        <div class="info-desc">Angebotskurve verschiebt sich nach links → weniger Menge, höherer Konsumentenpreis, niedrigerer Produzentenpreis.</div>
+      </div>
+
+      <div style="margin-top:14px;">
+        <button class="btn-intervention btn-rent" id="btn-rent" onclick="toggleRente()" style="padding:12px 8px;">📐 Konsumenten- &amp; Produzentenrente anzeigen</button>
+      </div>
+    </div>
+
+    <!-- Quiz -->
+    <div class="quiz-card">
+      <div class="quiz-title">❓ Challenge</div>
+      <div class="quiz-q" id="quiz-q"></div>
+      <div class="quiz-btns">
+        <button class="quiz-btn" onclick="answer('steigt')">Steigt</button>
+        <button class="quiz-btn" onclick="answer('sinkt')">Sinkt</button>
+      </div>
+      <div id="quiz-feedback" style="display:none;" class="quiz-feedback"></div>
+    </div>
+
+  </div><!-- /left -->
+
+  <!-- Right -->
+  <div class="right-card">
+    <div class="market-badge" id="market-badge">Gleichgewicht</div>
+    <div id="price-section">
+      <div class="price-label">Aktueller Marktpreis</div>
+      <div class="price-value" id="price-display">1.00 €</div>
+      <br>
+    </div>
+    <div class="visual-box" id="visual-box"></div>
+
+    <!-- Elastizität Panel -->
+    <div id="elast-panel" class="elast-panel" style="display:none;">
+      <div class="elast-formula">
+        <div class="elast-formula-text">ε = [f ′(x₀) / f(x₀)] × x₀</div>
+        <div class="elast-formula-sub">Punktelastizität an der Stelle x₀</div>
+      </div>
+      <div class="elast-graph-box" id="elast-graph-box"></div>
+      <div class="elast-slider-row">
+        <div class="elast-slider-label">
+          <span>📍 Betrachtete Menge x₀</span>
+          <span class="elast-x0-val" id="elast-x0-display">50</span>
+        </div>
+        <input type="range" min="1" max="99" value="50" id="sl-x0" oninput="updateElast()">
+      </div>
+      <div class="elast-cards">
+        <div class="elast-card elast-card-n">
+          <div class="elast-card-label">📉 Nachfrage εₙ</div>
+          <div class="elast-card-value" id="elast-val-n">–</div>
+          <div id="elast-badge-n"></div>
+        </div>
+        <div class="elast-card elast-card-a">
+          <div class="elast-card-label">📈 Angebot εₐ</div>
+          <div class="elast-card-value" id="elast-val-a">–</div>
+          <div id="elast-badge-a"></div>
+        </div>
+      </div>
+      <div class="elast-interp" id="elast-interp"></div>
+    </div>
+  </div>
+</div>
+
+<div class="footer">
+  <a class="gh-link" href="https://github.com/mariusskroce" target="_blank">
+    <svg class="gh-icon" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/>
+    </svg>
+    @mariusskroce
+  </a>
+</div>
+
+<script>
+  let mode = null;
+  let view = 'visual';
+  let showRente = false;
+
+  const quizFragen = [
+    { frage: "Die Produktionskosten sinken durch neue Technik. Was passiert mit dem Angebot?", korrekt: "steigt" },
+    { frage: "Ein Produkt wird plötzlich zum Trend. Die Nachfrage...", korrekt: "steigt" },
+    { frage: "Eine Naturkatastrophe zerstört Ernten. Das Angebot von Lebensmitteln...", korrekt: "sinkt" },
+    { frage: "Ein neuer Konkurrenz-Anbieter betritt den Markt. Das Gesamtangebot...", korrekt: "steigt" },
+    { frage: "Der Staat erhebt eine Steuer auf ein Produkt. Das Angebot...", korrekt: "sinkt" }
+  ];
+  let qIdx = 0;
+
+  // ─── Hilfsfunktionen ────────────────────────────────────────────────────────
+
+  function getSubRate() { return parseInt(document.getElementById('sl-sub-rate').value) / 100; }
+  function getTaxRate() { return parseInt(document.getElementById('sl-tax-rate').value) / 100; }
+
+  // ─── Tab / Mode ─────────────────────────────────────────────────────────────
+
+  function setView(v) {
+    view = v;
+    document.getElementById('tab-visual').classList.toggle('active', v === 'visual');
+    document.getElementById('tab-graph').classList.toggle('active', v === 'graph');
+    document.getElementById('tab-elast').classList.toggle('active', v === 'elastizitaet');
+    const isElast = v === 'elastizitaet';
+    document.getElementById('price-section').style.display  = isElast ? 'none' : '';
+    document.getElementById('market-badge').style.display   = isElast ? 'none' : '';
+    document.getElementById('visual-box').style.display     = isElast ? 'none' : '';
+    document.getElementById('elast-panel').style.display    = isElast ? 'flex' : 'none';
+    if (isElast) updateElast(); else update();
+  }
+
+  function toggleMode(m) {
+    mode = (mode === m) ? null : m;
+    document.getElementById('btn-sub').classList.toggle('on', mode === 'subvention');
+    document.getElementById('btn-tax').classList.toggle('on', mode === 'steuer');
+    document.getElementById('sub-info').style.display = mode === 'subvention' ? 'block' : 'none';
+    document.getElementById('tax-info').style.display = mode === 'steuer'     ? 'block' : 'none';
+    update();
+  }
+
+  function toggleRente() {
+    showRente = !showRente;
+    document.getElementById('btn-rent').classList.toggle('on', showRente);
+    update();
+  }
+
+  function onParamChange() {
+    // Badge-Anzeige immer aktualisieren
+    const A = parseInt(document.getElementById('sl-angebot').value);
+    const N = parseInt(document.getElementById('sl-nachfrage').value);
+    document.getElementById('val-angebot').textContent  = A;
+    document.getElementById('val-nachfrage').textContent = N;
+    if (view === 'elastizitaet') updateElast(); else update();
+  }
+
+  function onRateChange(which) {
+    const val = parseInt(document.getElementById(which === 'sub' ? 'sl-sub-rate' : 'sl-tax-rate').value);
+    document.getElementById(which === 'sub' ? 'sub-rate-display' : 'tax-rate-display').textContent = val + ' %';
+    update();
+  }
+
+  // ─── Main update ─────────────────────────────────────────────────────────────
+
+  function update() {
+    const A = parseInt(document.getElementById('sl-angebot').value);
+    const N = parseInt(document.getElementById('sl-nachfrage').value);
+    document.getElementById('val-angebot').textContent  = A;
+    document.getElementById('val-nachfrage').textContent = N;
+
+    // Gleichgewichtspreis ohne Eingriff: P* = 2AN/(A+N)
+    const basis = 2 * A * N / (A + N);
+    let preis, status;
+
+    if (mode === 'subvention') {
+      const rate = getSubRate();
+      const pCons = basis * (1 - rate / 2);
+      const pProd = basis * (1 + rate / 2);
+      preis  = pCons;
+      status = 'subvention';
+      document.getElementById('si-basis').textContent = basis.toFixed(2) + ' €';
+      document.getElementById('si-sub').textContent   = (basis * rate).toFixed(2) + ' €';
+      document.getElementById('si-cons').textContent  = pCons.toFixed(2) + ' €';
+      document.getElementById('si-prod').textContent  = pProd.toFixed(2) + ' €';
+    } else if (mode === 'steuer') {
+      const rate = getTaxRate();
+      const pCons = basis * (1 + rate / 2);
+      const pProd = basis * (1 - rate / 2);
+      preis  = pCons;
+      status = 'steuer';
+      document.getElementById('ti-basis').textContent = basis.toFixed(2) + ' €';
+      document.getElementById('ti-tax').textContent   = '+ ' + (basis * rate).toFixed(2) + ' €';
+      document.getElementById('ti-cons').textContent  = pCons.toFixed(2) + ' €';
+      document.getElementById('ti-prod').textContent  = pProd.toFixed(2) + ' €';
+    } else {
+      preis  = basis;
+      status = N > A ? 'nachfrageueberhang' : (A > N ? 'angebotsueberhang' : 'gleichgewicht');
+    }
+
+    const pd = document.getElementById('price-display');
+    pd.textContent = preis.toFixed(2) + ' €';
+    pd.className   = 'price-value' + (mode === 'subvention' ? ' violet' : mode === 'steuer' ? ' orange' : '');
+
+    const badges = {
+      subvention: 'Subventioniert', steuer: 'Besteuert',
+      nachfrageueberhang: 'Verkäufermarkt', angebotsueberhang: 'Käufermarkt', gleichgewicht: 'Gleichgewicht'
+    };
+    document.getElementById('market-badge').textContent = badges[status] || 'Gleichgewicht';
+
+    if (view === 'visual') renderVisual(status, basis);
+    else if (view === 'graph') renderGraph(A, N, status);
+  }
+
+  // ─── Simulation View ─────────────────────────────────────────────────────────
+
+  function renderVisual(status, basis) {
+    const box = document.getElementById('visual-box');
+    const configs = {
+      nachfrageueberhang: { icon: '⬆️', text: 'Preise steigen (Mangel)' },
+      angebotsueberhang:  { icon: '⬇️', text: 'Preise sinken (Überfluss)' },
+      gleichgewicht:      { icon: '🔄', text: 'Markt im Gleichgewicht' },
+      subvention:         { icon: '🤝', text: 'Subventionierter Markt' },
+      steuer:             { icon: '🏛️', text: 'Besteuerter Markt' }
+    };
+    const c = configs[status] || configs.gleichgewicht;
+    const rate   = mode === 'subvention' ? getSubRate() : getTaxRate();
+    const betrag = (basis * rate).toFixed(2);
+    box.innerHTML = `
+      <div class="visual-icon">${c.icon}</div>
+      <div class="visual-text">${c.text}</div>
+      ${status === 'subvention' ? `
+        <div class="sub-visual-info">
+          <div class="sub-chip">💰 Staat zahlt ${betrag} € je Einheit</div>
+          <div class="sub-hint">Produzenten erhalten mehr → Angebot steigt → Konsumentenpreis sinkt</div>
+        </div>` : ''}
+      ${status === 'steuer' ? `
+        <div class="sub-visual-info">
+          <div class="sub-chip" style="background:#fff7ed;border-color:#fed7aa;color:#c2410c;">🏛️ Staat kassiert ${betrag} € je Einheit</div>
+          <div class="sub-hint">Produzenten erhalten weniger → Angebot sinkt → Konsumentenpreis steigt</div>
+        </div>` : ''}`;
+  }
+
+  // ─── Graph View ──────────────────────────────────────────────────────────────
+
+  function renderGraph(A, N, status) {
+    const box = document.getElementById('visual-box');
+    const pad = 28, sz = 170, s = 0.7;
+    const nOff = (N - 50) * s;
+    const aOff = (A - 50) * s;
+
+    // SVG-Kurven: Steigung ±1 exakt
+    const yN = x => x - nOff;
+    const yA = x => sz - aOff - x + pad;
+
+    // Gleichgewicht (ohne Eingriff): yN(x) = yA(x) → 2x = sz+pad+nOff-aOff
+    const iX = (sz + pad + nOff - aOff) / 2;
+    const iY = yN(iX);
+
+    // Verschiebung proportional zur Rate (max 40% des Zeichenbereichs bei 60%)
+    const subShift  =  (sz - pad) * getSubRate() * 0.67;
+    const taxShiftV =  (sz - pad) * getTaxRate() * 0.67;
+
+    const yA_sub = x => yA(x) + subShift;
+    const yA_tax = x => yA(x) - taxShiftV;
+
+    // Neue GGW-Punkte
+    const iXS = (sz + pad + subShift  + nOff - aOff) / 2;  const iYS = yN(iXS);
+    const iXT = (sz + pad - taxShiftV + nOff - aOff) / 2;  const iYT = yN(iXT);
+
+    // ---- Renten ----
+    let renteLayer = '';
+    if (showRente) {
+      if (mode === 'steuer') {
+        const pC_y = iYT, pP_y = yA(iXT);
+        renteLayer =
+          `<polygon points="${pad},${yN(pad)} ${iXT},${pC_y} ${pad},${pC_y}" fill="#2563eb" fill-opacity="0.55"/>` +
+          `<polygon points="${pad},${yA(pad)} ${iXT},${pP_y} ${pad},${pP_y}" fill="#16a34a" fill-opacity="0.55"/>` +
+          `<polygon points="${pad},${pC_y} ${iXT},${pC_y} ${iXT},${pP_y} ${pad},${pP_y}" fill="#ea580c" fill-opacity="0.45"/>` +
+          `<polygon points="${iXT},${pC_y} ${iX},${iY} ${iXT},${iY}" fill="#f97316" fill-opacity="0.35"/>` +
+          `<polygon points="${iXT},${pP_y} ${iX},${iY} ${iXT},${iY}" fill="#f97316" fill-opacity="0.35"/>`;
+      } else if (mode === 'subvention') {
+        const pC_y = iYS, pP_y = yA(iXS);
+        renteLayer =
+          `<polygon points="${pad},${yN(pad)} ${iXS},${pC_y} ${pad},${pC_y}" fill="#2563eb" fill-opacity="0.55"/>` +
+          `<polygon points="${pad},${yA(pad)} ${iXS},${pP_y} ${pad},${pP_y}" fill="#16a34a" fill-opacity="0.55"/>` +
+          `<polygon points="${pad},${pP_y} ${iXS},${pP_y} ${iXS},${pC_y} ${pad},${pC_y}" fill="#7c3aed" fill-opacity="0.30"/>`;
+      } else {
+        renteLayer =
+          `<polygon points="${pad},${yN(pad)} ${iX},${iY} ${pad},${iY}" fill="#2563eb" fill-opacity="0.55"/>` +
+          `<polygon points="${pad},${yA(pad)} ${iX},${iY} ${pad},${iY}" fill="#16a34a" fill-opacity="0.55"/>`;
+      }
+    }
+
+    // ---- Verschobene Kurve ----
+    const aOpacity = (mode === 'subvention' || mode === 'steuer') ? '0.3' : '1';
+    const aDash    = (mode === 'subvention' || mode === 'steuer') ? 'stroke-dasharray="5,4"' : '';
+    const aWidth   = (mode === 'subvention' || mode === 'steuer') ? '2' : '4';
+    let extra = '';
+
+    if (mode === 'subvention') {
+      extra = `
+        <line x1="${pad+subShift}" y1="${sz-aOff}" x2="${sz+subShift}" y2="${pad-aOff}" stroke="#7c3aed" stroke-width="3.5"/>
+        <circle cx="${iXS}" cy="${iYS}" r="5.5" fill="#7c3aed" stroke="#fff" stroke-width="2"/>
+        <circle cx="${iX}"  cy="${iY}"  r="3.5" fill="#94a3b8" stroke="#fff" stroke-width="1.5"/>
+        <text x="${pad+2}" y="${pad+12}" font-size="5.5" fill="#7c3aed" font-weight="bold">A' (sub.)</text>
+        <text x="${pad+2}" y="${pad+19}" font-size="5.5" fill="#10b981" font-weight="bold">A (orig.)</text>`;
+    } else if (mode === 'steuer') {
+      extra = `
+        <line x1="${pad-taxShiftV}" y1="${sz-aOff}" x2="${sz-taxShiftV}" y2="${pad-aOff}" stroke="#ea580c" stroke-width="3.5"/>
+        <circle cx="${iXT}" cy="${iYT}" r="5.5" fill="#ea580c" stroke="#fff" stroke-width="2"/>
+        <circle cx="${iX}"  cy="${iY}"  r="3.5" fill="#94a3b8" stroke="#fff" stroke-width="1.5"/>
+        <text x="${pad+2}" y="${pad+12}" font-size="5.5" fill="#ea580c" font-weight="bold">A' (Steuer)</text>
+        <text x="${pad+2}" y="${pad+19}" font-size="5.5" fill="#10b981" font-weight="bold">A (orig.)</text>`;
+    }
+
+    const eqDot = (mode === 'subvention' || mode === 'steuer') ? '' :
+      `<circle cx="${iX}" cy="${iY}" r="6" fill="#1e293b" stroke="#fff" stroke-width="2"/>`;
+
+    let renteLegend = '';
+    if (showRente) {
+      renteLegend = `<div class="rent-legend">
+        <div class="rent-chip" style="background:#1d4ed8;color:#fff;">■ Konsumentenrente</div>
+        <div class="rent-chip" style="background:#15803d;color:#fff;">■ Produzentenrente</div>
+        ${mode === 'steuer'     ? '<div class="rent-chip" style="background:#c2410c;color:#fff;">■ Steueraufkommen</div><div class="rent-chip" style="background:#f97316;color:#fff;">■ Wohlfahrtsverlust</div>' : ''}
+        ${mode === 'subvention' ? '<div class="rent-chip" style="background:#6d28d9;color:#fff;">■ Subventionskosten</div>' : ''}
+      </div>`;
+    }
+
+    box.innerHTML = `
+      <svg viewBox="0 0 200 200" style="width:100%;max-width:300px;overflow:visible;">
+        ${renteLayer}
+        <line x1="${pad}" y1="${pad}" x2="${pad}" y2="${sz}" stroke="#cbd5e1" stroke-width="2.5"/>
+        <line x1="${pad}" y1="${sz}"  x2="${sz}"  y2="${sz}" stroke="#cbd5e1" stroke-width="2.5"/>
+        <text x="${pad-4}" y="${pad+5}" font-size="7" font-weight="900" fill="#64748b" text-anchor="end">P</text>
+        <text x="${sz}"    y="${sz+12}" font-size="7" font-weight="900" fill="#64748b" text-anchor="end">Q</text>
+        <line x1="${pad}" y1="${pad-nOff}" x2="${sz}" y2="${sz-nOff}" stroke="#f59e0b" stroke-width="4"/>
+        <line x1="${pad}" y1="${sz-aOff}"  x2="${sz}" y2="${pad-aOff}" stroke="#10b981" stroke-width="${aWidth}" opacity="${aOpacity}" ${aDash}/>
+        ${extra}
+        ${eqDot}
+      </svg>
+      ${renteLegend}`;
+  }
+
+  // ─── Elastizität View ────────────────────────────────────────────────────────
+
+  function elastBadge(absE) {
+    if (Math.abs(absE - 1) < 0.05) return ['Einheitselastisch', 'elast-badge-unit'];
+    if (absE > 1) return ['Elastisch (|ε| > 1)', 'elast-badge-elastic'];
+    return ['Unelastisch (|ε| < 1)', 'elast-badge-inelastic'];
+  }
+
+  function updateElast() {
+    const A  = parseInt(document.getElementById('sl-angebot').value);
+    const N  = parseInt(document.getElementById('sl-nachfrage').value);
+    const x0 = parseInt(document.getElementById('sl-x0').value);
+    document.getElementById('elast-x0-display').textContent = x0;
+
+    // Kurvenmodell mit steigungsabhängigen Parametern:
+    // P_N(Q) = N − (N/50)*Q   →  bei Q=0: P=N, bei Q=50: P=0  — Steigung = −N/50
+    // P_A(Q) = (A/50)*Q        →  bei Q=0: P=0, bei Q=50: P=A  — Steigung = +A/50
+    // Gleichgewicht: N − (N/50)*Q = (A/50)*Q  →  Q* = 50N/(A+N), P* = AN/(A+N)
+    //
+    // Elastizität: ε = (f'(x0) / f(x0)) * x0
+    // ε_N = (−N/50) / (N − (N/50)*x0) * x0 = −x0 / (50 − x0)
+    //   → hängt nur von x0 ab, NICHT von N (da N herausgekürzt wird)
+    // ε_A = (A/50)  / ((A/50)*x0)      * x0 =  1   (immer, da x0 kürzt sich weg)
+    //
+    // Damit ε von A und N abhängt, verwenden wir VERSCHIEDENE Achseninterzepte:
+    // P_N(Q) = 2N − (2N/(100)) * Q  →  Achseninterzept = 2N, Nullstelle bei Q=100
+    // P_A(Q) = (2A/100) * Q          →  Nullstelle bei Q=0, Wert bei Q=100: 2A
+    //
+    // ε_N(x0) = (−2N/100) / (2N − (2N/100)*x0) * x0 = −x0 / (100 − x0)
+    //   → immer noch unabhängig von N. Das ist eine mathematische Eigenschaft
+    //   linearer Kurven mit festem Achseninterzept.
+    //
+    // Lösung: A und N steuern den ACHSENINTERZEPT (maximaler Preis) für N
+    // und die Steigung für A separat:
+    // P_N(Q) = N * (1 − Q/100)    →  f'_N = −N/100
+    // P_A(Q) = A * (Q/100)         →  f'_A = +A/100
+    //
+    // ε_N = (−N/100) / (N*(1−x0/100)) * x0 = −x0 / (100 − x0)  [noch immer unabh.]
+    //
+    // Die einzige Möglichkeit, ε von A und N abhängig zu machen, ist eine
+    // NICHT-LINEARE Kurvenform. Wir nutzen:
+    // P_N(Q) = N * exp(−Q * kN)   mit kN = ln(N+1)/100
+    // P_A(Q) = A * (1 − exp(−Q * kA)) mit kA = ln(A+1)/100
+    //
+    // f'_N(x0) = −kN * N * exp(−x0*kN)
+    // ε_N = f'_N/f_N * x0 = −kN * x0     → variiert mit N und x0 ✓
+    //
+    // f'_A(x0) = kA * A * exp(−x0*kA)
+    // f_A(x0)  = A * (1 − exp(−x0*kA))
+    // ε_A = kA * exp(−x0*kA) / (1 − exp(−x0*kA)) * x0  → variiert mit A und x0 ✓
+
+    const kN = Math.log(N + 1) / 100;
+    const kA = Math.log(A + 1) / 100;
+
+    const fN  = N * Math.exp(-x0 * kN);
+    const dfN = -kN * fN;
+    const fA  = A * (1 - Math.exp(-x0 * kA));
+    const dfA = kA * A * Math.exp(-x0 * kA);
+
+    const eN = fN > 0.001 ? (dfN / fN) * x0 : null;
+    const eA = fA > 0.001 ? (dfA / fA) * x0 : null;
+
+    document.getElementById('elast-val-n').textContent = eN !== null ? eN.toFixed(2) : '∞';
+    document.getElementById('elast-val-a').textContent = eA !== null ? eA.toFixed(2) : '∞';
+
+    [['n', eN], ['a', eA]].forEach(([k, e]) => {
+      if (e !== null) {
+        const [label, cls] = elastBadge(Math.abs(e));
+        document.getElementById('elast-badge-' + k).innerHTML =
+          `<span class="elast-badge ${cls}">${label}</span>`;
+      }
+    });
+
+    const eNabs = eN !== null ? Math.abs(eN) : null;
+    const eAabs = eA !== null ? Math.abs(eA) : null;
+
+    const interpN = eNabs !== null
+      ? (eNabs > 1
+        ? `Bei x₀ = ${x0} reagieren Konsumenten <strong>stark</strong> auf Preisänderungen — 1 % Preisanstieg → Nachfrage sinkt um <strong>${eNabs.toFixed(2)} %</strong>.`
+        : eNabs < 1
+        ? `Bei x₀ = ${x0} reagieren Konsumenten <strong>wenig</strong> auf Preisänderungen — 1 % Preisanstieg → Nachfrage sinkt nur um <strong>${eNabs.toFixed(2)} %</strong>.`
+        : `Bei x₀ = ${x0} ist die Nachfrage <strong>einheitselastisch</strong>.`) : '';
+
+    const interpA = eAabs !== null
+      ? (eAabs > 1
+        ? `Das Angebot ist <strong>elastisch</strong> — Produzenten reagieren stark auf Preisänderungen (${eAabs.toFixed(2)} %).`
+        : `Das Angebot ist <strong>unelastisch</strong> — Produzenten können kurzfristig kaum reagieren (${eAabs.toFixed(2)} %).`) : '';
+
+    document.getElementById('elast-interp').innerHTML =
+      interpN + (interpN && interpA ? '<br><br>' : '') + interpA;
+
+    renderElastGraph(A, N, x0, eN, eA);
+  }
+
+  function renderElastGraph(A, N, x0, eN, eA) {
+    const box = document.getElementById('elast-graph-box');
+    const pad = 32, W = 190, H = 170;
+
+    const kN = Math.log(N + 1) / 100;
+    const kA = Math.log(A + 1) / 100;
+    const pN = q => N * Math.exp(-q * kN);
+    const pA = q => A * (1 - Math.exp(-q * kA));
+
+    // Maximaler Preis für Skalierung
+    const maxP = Math.max(pN(0), pA(100), 0.01);
+    const scX = q => pad + (q / 100) * (W - pad - 6);
+    const scY = p => H  - 10 - (p / maxP) * (H - pad - 10);
+
+    // Kurven als Pfade
+    let dPath = '', aPath = '';
+    for (let q = 0; q <= 100; q += 1) {
+      dPath += (q === 0 ? 'M' : 'L') + scX(q).toFixed(1) + ',' + scY(pN(q)).toFixed(1) + ' ';
+      aPath += (q === 0 ? 'M' : 'L') + scX(q).toFixed(1) + ',' + scY(pA(q)).toFixed(1) + ' ';
+    }
+
+    // Gleichgewicht numerisch lösen (pN(q) = pA(q))
+    let qStar = 50, pStar = 0;
+    for (let iter = 0; iter < 100; iter++) {
+      const f  = pN(qStar) - pA(qStar);
+      const df = -kN * pN(qStar) - kA * A * Math.exp(-qStar * kA);
+      const step = f / df;
+      qStar -= step;
+      qStar = Math.max(1, Math.min(99, qStar));
+      if (Math.abs(step) < 0.0001) break;
+    }
+    pStar = pN(qStar);
+    const eqSvgX = scX(qStar), eqSvgY = scY(pStar);
+
+    // x0 Punkte auf den Kurven
+    const pN_x0 = pN(x0);
+    const pA_x0 = pA(x0);
+    const x0SvgX  = scX(x0);
+    const x0SvgYN = scY(pN_x0);
+    const x0SvgYA = scY(pA_x0);
+
+    // Tangenten: Ableitungen der Exponentialfunktionen
+    const dfN_x0 = -kN * pN(x0);
+    const dfA_x0 =  kA * A * Math.exp(-x0 * kA);
+    const scaleY = (H - pad - 10) / maxP;
+    const scaleX = (W - pad - 6) / 100;
+    const slopeN_px = dfN_x0 * scaleY / scaleX;
+    const slopeA_px = dfA_x0 * scaleY / scaleX;
+    const tLen = 20;
+
+    // Tangente N: durch (x0SvgX, x0SvgYN) mit Steigung slopeN_px
+    const tNx1 = x0SvgX - tLen, tNy1 = x0SvgYN - slopeN_px * (-tLen);
+    const tNx2 = x0SvgX + tLen, tNy2 = x0SvgYN - slopeN_px * tLen;
+    const tAx1 = x0SvgX - tLen, tAy1 = x0SvgYA - slopeA_px * (-tLen);
+    const tAx2 = x0SvgX + tLen, tAy2 = x0SvgYA - slopeA_px * tLen;
+
+    const eNlabel = eN !== null ? `εₙ=${eN.toFixed(2)}` : '';
+    const eAlabel = eA !== null ? `εₐ=${eA.toFixed(2)}` : '';
+
+    // Label-Positionen: links/rechts von x0 je nach Platz
+    const labelOffN = x0 > 60 ? -42 : 5;
+    const labelOffA = x0 > 60 ? -42 : 5;
+
+    box.innerHTML = `<svg viewBox="0 0 ${W} ${H}" style="width:100%;display:block;">
+      <!-- Achsen -->
+      <line x1="${pad}" y1="${pad-10}" x2="${pad}"   y2="${H-10}" stroke="#cbd5e1" stroke-width="1.5"/>
+      <line x1="${pad}" y1="${H-10}"   x2="${W-4}"   y2="${H-10}" stroke="#cbd5e1" stroke-width="1.5"/>
+      <text x="${pad-3}" y="${pad-4}" font-size="6.5" font-weight="900" fill="#64748b" text-anchor="end">P</text>
+      <text x="${W-2}"   y="${H-7}"   font-size="6.5" font-weight="900" fill="#64748b">Q</text>
+
+      <!-- Nachfragekurve -->
+      <path d="${dPath}" fill="none" stroke="#f59e0b" stroke-width="2.5"/>
+      <text x="${scX(2)}" y="${scY((2*N/100)*98)+1}" font-size="7" fill="#d97706" font-weight="900">N</text>
+
+      <!-- Angebotskurve -->
+      <path d="${aPath}" fill="none" stroke="#10b981" stroke-width="2.5"/>
+      <text x="${scX(98)}" y="${scY((2*A/100)*98)-3}" font-size="7" fill="#059669" font-weight="900">A</text>
+
+      <!-- Gleichgewicht -->
+      <line x1="${eqSvgX}" y1="${pad-10}" x2="${eqSvgX}" y2="${H-10}" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+      <line x1="${pad}"    y1="${eqSvgY}" x2="${W-4}"    y2="${eqSvgY}" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3,3"/>
+      <circle cx="${eqSvgX}" cy="${eqSvgY}" r="3.5" fill="#1e293b" stroke="#fff" stroke-width="1.5"/>
+
+      <!-- x0 Linie -->
+      <line x1="${x0SvgX}" y1="${pad-10}" x2="${x0SvgX}" y2="${H-10}" stroke="#4f46e5" stroke-width="1.5" stroke-dasharray="4,3"/>
+      <text x="${x0SvgX}" y="${H-1}" font-size="5.5" fill="#4f46e5" font-weight="900" text-anchor="middle">x₀</text>
+
+      <!-- Tangente Nachfrage -->
+      <line x1="${tNx1}" y1="${tNy1}" x2="${tNx2}" y2="${tNy2}" stroke="#d97706" stroke-width="1.5" stroke-dasharray="3,2" opacity="0.8"/>
+      <circle cx="${x0SvgX}" cy="${x0SvgYN}" r="4" fill="#f59e0b" stroke="#fff" stroke-width="1.5"/>
+      <text x="${x0SvgX + labelOffN}" y="${x0SvgYN - 5}" font-size="6" fill="#d97706" font-weight="900">${eNlabel}</text>
+
+      <!-- Tangente Angebot -->
+      <line x1="${tAx1}" y1="${tAy1}" x2="${tAx2}" y2="${tAy2}" stroke="#059669" stroke-width="1.5" stroke-dasharray="3,2" opacity="0.8"/>
+      <circle cx="${x0SvgX}" cy="${x0SvgYA}" r="4" fill="#10b981" stroke="#fff" stroke-width="1.5"/>
+      <text x="${x0SvgX + labelOffA}" y="${x0SvgYA + 11}" font-size="6" fill="#059669" font-weight="900">${eAlabel}</text>
+    </svg>`;
+  }
+
+  // ─── Quiz ────────────────────────────────────────────────────────────────────
+
+  function initQuiz() {
+    document.getElementById('quiz-q').textContent = quizFragen[qIdx].frage;
+    document.getElementById('quiz-feedback').style.display = 'none';
+  }
+
+  function answer(a) {
+    const fb = document.getElementById('quiz-feedback');
+    const ok = a === quizFragen[qIdx].korrekt;
+    fb.className = 'quiz-feedback ' + (ok ? 'feedback-ok' : 'feedback-err');
+    fb.textContent = ok ? '✓ Richtig!' : '✗ Falsch, versuch es nochmal!';
+    fb.style.display = 'flex';
+    if (ok) setTimeout(() => { qIdx = (qIdx + 1) % quizFragen.length; initQuiz(); }, 1000);
+  }
+
+  initQuiz();
+  update();
+</script>
+</body>
+</html>
